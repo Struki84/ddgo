@@ -20,38 +20,49 @@ type Result struct {
 // Requests the query and puts the results into an array
 func Query(query string, maxResult int) ([]Result, error) {
 	results := []Result{}
-	url := fmt.Sprintf("https://duckduckgo.com/html/?q=%s", url.QueryEscape(query))
+	queryUrl := fmt.Sprintf("https://duckduckgo.com/html/?q=%s", url.QueryEscape(query))
 
-	response, err := http.Get(url)
+	response, err := http.Get(queryUrl)
 	if err != nil {
-		log.Printf("Get %v Error: %s", url, err)
+		log.Printf("get %v error: %s", queryUrl, err)
 		return results, err
 	}
+	
 	defer response.Body.Close()
 	
-	doc, err := goquery.NewDocument(url)
+	if response.StatusCode != 200 {
+        log.Printf("status code error: %d %s", response.StatusCode, response.Status)
+		return results, fmt.Errorf("status code error: %d %s", response.StatusCode, response.Status)
+    }
+	
+	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
-		log.Pr
+		log.Printf("NewDocument Error: %s", err)
+		return results, err
 	}
 
 	sel := doc.Find(".web-result")
 
 	for i := range sel.Nodes {
 		// Break loop once required amount of results are add
-		if it == len(results) {
+		if maxResult == len(results) {
 			break
 		}
-
-		single := sel.Eq(i)
-		titleNode := single.Find(".result__a")
-		info := single.Find(".result__snippet").Text()
+		node := sel.Eq(i)
+		titleNode := node.Find(".result__a")
+		
+		info := node.Find(".result__snippet").Text()
 		title := titleNode.Text()
-		ref, _ := url.QueryUnescape(strings.TrimPrefix(titleNode.Nodes[0].Attr[2].Val, "/l/?kh=-1&uddg="))
+		ref, err := url.QueryUnescape(strings.TrimPrefix(titleNode.Nodes[0].Attr[2].Val, "/l/?kh=-1&uddg="))
+		
+		if err != nil {
+			log.Printf("Error: %s", err)
+			return results, err
+		}
 
-		results = append(results[:], Qresult{title, info, ref})
+		results = append(results[:], Result{title, info, ref})
 
 	}
 
-	// Return array of results and formated query used to get the results
-	return results, qf
+	return results, nil
 }
