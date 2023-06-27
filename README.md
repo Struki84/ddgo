@@ -6,7 +6,7 @@ Small wrapper around DuckDuckGo search API in GoLang. Will return search results
 
 Installation
 ---
-```go
+```shell
 go get https://github.com/Struki84/ddgo
 ```
 
